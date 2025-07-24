@@ -9,8 +9,8 @@ import (
 	"github.com/canonical/sqlair"
 
 	"github.com/juju/juju/core/database"
-	"github.com/juju/juju/core/machine"
-	"github.com/juju/juju/core/unit"
+	coremachine "github.com/juju/juju/core/machine"
+	coreunit "github.com/juju/juju/core/unit"
 	"github.com/juju/juju/domain"
 	applicationerrors "github.com/juju/juju/domain/application/errors"
 	domainlife "github.com/juju/juju/domain/life"
@@ -40,7 +40,7 @@ func NewState(
 // - [github.com/juju/juju/domain/machine/errors.MachineNotFound] when no
 // machine exists for the provided uuid.
 func (st *State) CheckMachineIsDead(
-	ctx context.Context, uuid machine.UUID,
+	ctx context.Context, uuid coremachine.UUID,
 ) (bool, error) {
 	db, err := st.DB()
 	if err != nil {
@@ -83,7 +83,7 @@ func (st *State) CheckMachineIsDead(
 // - [machineerrors.MachineNotFound] when no machine exists for the provided
 // uuid.
 func (st *State) GetMachineNetNodeUUID(
-	ctx context.Context, uuid machine.UUID,
+	ctx context.Context, uuid coremachine.UUID,
 ) (domainnetwork.NetNodeUUID, error) {
 	db, err := st.DB()
 	if err != nil {
@@ -91,11 +91,11 @@ func (st *State) GetMachineNetNodeUUID(
 	}
 
 	var (
-		input = machineUUID{UUID: uuid.String()}
+		input = entityUUID{UUID: uuid.String()}
 		dbVal netNodeUUIDRef
 	)
 	stmt, err := st.Prepare(
-		"SELECT &netNodeUUIDRef.* FROM machine WHERE uuid = $machineUUID.uuid",
+		"SELECT &netNodeUUIDRef.* FROM machine WHERE uuid = $entityUUID.uuid",
 		input, dbVal,
 	)
 	if err != nil {
@@ -133,13 +133,11 @@ func (st *State) GetUnitNetNodeUUID(
 	}
 
 	var (
-		input = unitUUID{UUID: uuid.String()}
+		input = entityUUID{UUID: uuid.String()}
 		dbVal netNodeUUIDRef
 	)
-	stmt, err := st.Prepare(`
-SELECT &netNodeUUIDRef.*
-FROM unit
-WHERE uuid = $unitUUID.uuid`,
+	stmt, err := st.Prepare(
+		"SELECT &netNodeUUIDRef.* FROM unit WHERE uuid = $entityUUID.uuid",
 		input, dbVal,
 	)
 	if err != nil {
@@ -155,9 +153,11 @@ WHERE uuid = $unitUUID.uuid`,
 		}
 		return err
 	})
+
 	if err != nil {
 		return "", errors.Capture(err)
 	}
+
 	return domainnetwork.NetNodeUUID(dbVal.UUID), nil
 }
 
