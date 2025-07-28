@@ -8,6 +8,7 @@ import (
 
 	"github.com/juju/juju/core/changestream"
 	coremachine "github.com/juju/juju/core/machine"
+	"github.com/juju/juju/core/trace"
 	coreunit "github.com/juju/juju/core/unit"
 	"github.com/juju/juju/core/watcher"
 	"github.com/juju/juju/core/watcher/eventsource"
@@ -111,6 +112,9 @@ func NewService(st State, wf WatcherFactory) *Service {
 func (s *Service) WatchMachineCloudInstance(
 	ctx context.Context, machineUUID coremachine.UUID,
 ) (watcher.NotifyWatcher, error) {
+	ctx, span := trace.Start(ctx, trace.NameFromFunc())
+	defer span.End()
+
 	dead, err := s.st.CheckMachineIsDead(ctx, machineUUID)
 	if err != nil {
 		return nil, errors.Errorf("checking if machine is dead: %w", err)
