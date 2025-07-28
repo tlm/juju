@@ -112,9 +112,12 @@ func (s *provisionerSuite) TestFilesystems(c *tc.C) {
 		Size:         1000,
 	}
 
+	s.mockStorageProvisioningService.EXPECT().CheckFilesystemForIDExists(
+		gomock.Any(), tag.Id(),
+	).Return(true, nil)
 	s.mockStorageProvisioningService.EXPECT().
-		GetFilesystem(gomock.Any(), tag.Id()).
-		Return(fs, nil).Times(2) // 1st call for auth.
+		GetFilesystemForID(gomock.Any(), tag.Id()).
+		Return(fs, nil)
 
 	result, err := s.api.Filesystems(c.Context(), params.Entities{
 		Entities: []params.Entity{
@@ -144,9 +147,12 @@ func (s *provisionerSuite) TestFilesystemsNotFound(c *tc.C) {
 
 	tag := names.NewFilesystemTag("123")
 
+	s.mockStorageProvisioningService.EXPECT().CheckFilesystemForIDExists(
+		gomock.Any(), tag.Id(),
+	).Return(true, nil)
 	s.mockStorageProvisioningService.EXPECT().
-		GetFilesystem(gomock.Any(), tag.Id()).
-		Return(storageprovisioning.Filesystem{}, storageprovisioningerrors.FilesystemNotFound).Times(2) // 1st call for auth.
+		GetFilesystemForID(gomock.Any(), tag.Id()).
+		Return(storageprovisioning.Filesystem{}, storageprovisioningerrors.FilesystemNotFound)
 
 	results, err := s.api.Filesystems(c.Context(), params.Entities{
 		Entities: []params.Entity{
@@ -172,9 +178,12 @@ func (s *provisionerSuite) TestFilesystemsNotProvisioned(c *tc.C) {
 		FilesystemID: "fs-1234",
 	}
 
+	s.mockStorageProvisioningService.EXPECT().CheckFilesystemForIDExists(
+		gomock.Any(), tag.Id(),
+	).Return(true, nil)
 	s.mockStorageProvisioningService.EXPECT().
-		GetFilesystem(gomock.Any(), tag.Id()).
-		Return(fs, nil).Times(2) // 1st call for auth.
+		GetFilesystemForID(gomock.Any(), tag.Id()).
+		Return(fs, nil)
 
 	results, err := s.api.Filesystems(c.Context(), params.Entities{
 		Entities: []params.Entity{
@@ -198,7 +207,7 @@ func (s *provisionerSuite) TestFilesystemAttachmentsForMachine(c *tc.C) {
 		GetMachineUUID(gomock.Any(), s.machineName).
 		Return(machineUUID, nil)
 	s.mockStorageProvisioningService.EXPECT().
-		GetFilesystemAttachmentForMachine(gomock.Any(), machineUUID, tag.Id()).
+		GetFilesystemAttachmentForMachine(gomock.Any(), tag.Id(), machineUUID).
 		Return(storageprovisioning.FilesystemAttachment{
 			FilesystemID: "fs-1234",
 			MountPoint:   "/mnt/foo",
@@ -241,7 +250,7 @@ func (s *provisionerSuite) TestFilesystemAttachmentsForMachineNotProvisioned(c *
 		GetMachineUUID(gomock.Any(), s.machineName).
 		Return(machineUUID, nil)
 	s.mockStorageProvisioningService.EXPECT().
-		GetFilesystemAttachmentForMachine(gomock.Any(), machineUUID, tag.Id()).
+		GetFilesystemAttachmentForMachine(gomock.Any(), tag.Id(), machineUUID).
 		Return(storageprovisioning.FilesystemAttachment{
 			FilesystemID: "fs-1234",
 			ReadOnly:     true,
@@ -272,7 +281,7 @@ func (s *provisionerSuite) TestFilesystemAttachmentsForMachineAttachmentNotFound
 		GetMachineUUID(gomock.Any(), s.machineName).
 		Return(machineUUID, nil)
 	s.mockStorageProvisioningService.EXPECT().
-		GetFilesystemAttachmentForMachine(gomock.Any(), machineUUID, tag.Id()).
+		GetFilesystemAttachmentForMachine(gomock.Any(), tag.Id(), machineUUID).
 		Return(storageprovisioning.FilesystemAttachment{}, storageprovisioningerrors.FilesystemAttachmentNotFound)
 
 	result, err := s.api.FilesystemAttachments(c.Context(), params.MachineStorageIds{
@@ -300,7 +309,7 @@ func (s *provisionerSuite) TestFilesystemAttachmentsForMachineFilesystemNotFound
 		GetMachineUUID(gomock.Any(), s.machineName).
 		Return(machineUUID, nil)
 	s.mockStorageProvisioningService.EXPECT().
-		GetFilesystemAttachmentForMachine(gomock.Any(), machineUUID, tag.Id()).
+		GetFilesystemAttachmentForMachine(gomock.Any(), tag.Id(), machineUUID).
 		Return(storageprovisioning.FilesystemAttachment{}, storageprovisioningerrors.FilesystemNotFound)
 
 	result, err := s.api.FilesystemAttachments(c.Context(), params.MachineStorageIds{
@@ -351,7 +360,7 @@ func (s *provisionerSuite) TestFilesystemAttachmentsForUnit(c *tc.C) {
 
 	s.mockApplicationService.EXPECT().GetUnitUUID(gomock.Any(), coreunit.Name("mysql/666")).Return(unitUUID, nil)
 	s.mockStorageProvisioningService.EXPECT().
-		GetFilesystemAttachmentForUnit(gomock.Any(), unitUUID, tag.Id()).
+		GetFilesystemAttachmentForUnit(gomock.Any(), tag.Id(), unitUUID).
 		Return(storageprovisioning.FilesystemAttachment{
 			FilesystemID: "fs-1234",
 			MountPoint:   "/mnt/foo",
@@ -393,7 +402,7 @@ func (s *provisionerSuite) TestFilesystemAttachmentsForUnitNotProvisioned(c *tc.
 
 	s.mockApplicationService.EXPECT().GetUnitUUID(gomock.Any(), coreunit.Name("mysql/666")).Return(unitUUID, nil)
 	s.mockStorageProvisioningService.EXPECT().
-		GetFilesystemAttachmentForUnit(gomock.Any(), unitUUID, tag.Id()).
+		GetFilesystemAttachmentForUnit(gomock.Any(), tag.Id(), unitUUID).
 		Return(storageprovisioning.FilesystemAttachment{
 			FilesystemID: "fs-1234",
 			ReadOnly:     true,
@@ -423,7 +432,7 @@ func (s *provisionerSuite) TestFilesystemAttachmentsForUnitAttachmentNotFound(c 
 
 	s.mockApplicationService.EXPECT().GetUnitUUID(gomock.Any(), coreunit.Name("mysql/666")).Return(unitUUID, nil)
 	s.mockStorageProvisioningService.EXPECT().
-		GetFilesystemAttachmentForUnit(gomock.Any(), unitUUID, tag.Id()).
+		GetFilesystemAttachmentForUnit(gomock.Any(), tag.Id(), unitUUID).
 		Return(storageprovisioning.FilesystemAttachment{}, storageprovisioningerrors.FilesystemAttachmentNotFound)
 
 	result, err := s.api.FilesystemAttachments(c.Context(), params.MachineStorageIds{
@@ -450,7 +459,7 @@ func (s *provisionerSuite) TestFilesystemAttachmentsForUnitFilesystemNotFound(c 
 
 	s.mockApplicationService.EXPECT().GetUnitUUID(gomock.Any(), coreunit.Name("mysql/666")).Return(unitUUID, nil)
 	s.mockStorageProvisioningService.EXPECT().
-		GetFilesystemAttachmentForUnit(gomock.Any(), unitUUID, tag.Id()).
+		GetFilesystemAttachmentForUnit(gomock.Any(), tag.Id(), unitUUID).
 		Return(storageprovisioning.FilesystemAttachment{}, storageprovisioningerrors.FilesystemNotFound)
 
 	result, err := s.api.FilesystemAttachments(c.Context(), params.MachineStorageIds{
