@@ -256,7 +256,8 @@ func (s *filesystemSuite) TestGetFilesystemAttachmentForMachineFilesystemNotFoun
 	machineUUID := machinetesting.GenUUID(c)
 	netNodeUUID, err := domainnetwork.NewNetNodeUUID()
 	c.Assert(err, tc.ErrorIsNil)
-	s.state.EXPECT().GetMachineNetNodeUUID(c.Context(), machineUUID).Return(netNodeUUID, nil)
+	s.state.EXPECT().GetMachineNetNodeUUID(c.Context(), machineUUID).
+		Return(netNodeUUID, nil).AnyTimes()
 	s.state.EXPECT().GetFilesystemUUIDForID(gomock.Any(), "fs-1234").Return(
 		"", storageprovisioningerrors.FilesystemNotFound,
 	)
