@@ -11,10 +11,9 @@ import (
 	domainlife "github.com/juju/juju/domain/life"
 	domainnetwork "github.com/juju/juju/domain/network"
 	networkerrors "github.com/juju/juju/domain/network/errors"
-	"github.com/juju/juju/domain/storageprovisioning"
+	domainstorageprovisioning "github.com/juju/juju/domain/storageprovisioning"
 	storageprovisioningerrors "github.com/juju/juju/domain/storageprovisioning/errors"
 	domaintesting "github.com/juju/juju/domain/storageprovisioning/testing"
-	"github.com/juju/juju/internal/uuid"
 )
 
 // volumeSuite provides a set of tests for asserting the state interface for
@@ -42,7 +41,7 @@ func (s *volumeSuite) TestGetVolumeAttachmentIDsOnlyUnits(c *tc.C) {
 	st := NewState(s.TxnRunnerFactory())
 	result, err := st.GetVolumeAttachmentIDs(c.Context(), []string{vsaUUID.String()})
 	c.Check(err, tc.ErrorIsNil)
-	c.Check(result, tc.DeepEquals, map[string]storageprovisioning.VolumeAttachmentID{
+	c.Check(result, tc.DeepEquals, map[string]domainstorageprovisioning.VolumeAttachmentID{
 		vsaUUID.String(): {
 			VolumeID:    vsID,
 			MachineName: nil,
@@ -64,7 +63,7 @@ func (s *volumeSuite) TestGetVolumeAttachmentIDsOnlyMachines(c *tc.C) {
 	st := NewState(s.TxnRunnerFactory())
 	result, err := st.GetVolumeAttachmentIDs(c.Context(), []string{vsaUUID.String()})
 	c.Check(err, tc.ErrorIsNil)
-	c.Check(result, tc.DeepEquals, map[string]storageprovisioning.VolumeAttachmentID{
+	c.Check(result, tc.DeepEquals, map[string]domainstorageprovisioning.VolumeAttachmentID{
 		vsaUUID.String(): {
 			VolumeID:    vsID,
 			MachineName: &machineName,
@@ -89,7 +88,7 @@ func (s *volumeSuite) TestGetVolumeAttachmentIDsMachineNotUnit(c *tc.C) {
 	st := NewState(s.TxnRunnerFactory())
 	result, err := st.GetVolumeAttachmentIDs(c.Context(), []string{vsaUUID.String()})
 	c.Check(err, tc.ErrorIsNil)
-	c.Check(result, tc.DeepEquals, map[string]storageprovisioning.VolumeAttachmentID{
+	c.Check(result, tc.DeepEquals, map[string]domainstorageprovisioning.VolumeAttachmentID{
 		vsaUUID.String(): {
 			VolumeID:    vsID,
 			MachineName: &machineName,
@@ -119,7 +118,7 @@ func (s *volumeSuite) TestGetVolumeAttachmentIDsMixed(c *tc.C) {
 		vsaOneUUID.String(), vsaTwoUUID.String(),
 	})
 	c.Check(err, tc.ErrorIsNil)
-	c.Check(result, tc.DeepEquals, map[string]storageprovisioning.VolumeAttachmentID{
+	c.Check(result, tc.DeepEquals, map[string]domainstorageprovisioning.VolumeAttachmentID{
 		vsaOneUUID.String(): {
 			VolumeID:    vsOneID,
 			MachineName: &machineName,
@@ -356,7 +355,8 @@ func (s *volumeSuite) TestInitialWatchStatementMachineProvisionedVolumesNone(c *
 func (s *volumeSuite) TestInitialWatchStatementMachineProvisionedVolumesNetNodeMissing(c *tc.C) {
 	st := NewState(s.TxnRunnerFactory())
 
-	netNodeUUID := uuid.MustNewUUID().String()
+	netNodeUUID, err := domainnetwork.NewNetNodeUUID()
+	c.Assert(err, tc.ErrorIsNil)
 
 	ns, initialQuery := st.InitialWatchStatementMachineProvisionedVolumes(
 		domainnetwork.NetNodeUUID(netNodeUUID),
@@ -364,7 +364,7 @@ func (s *volumeSuite) TestInitialWatchStatementMachineProvisionedVolumesNetNodeM
 	c.Check(ns, tc.Equals, "storage_volume_life_machine_provisioning")
 
 	db := s.TxnRunner()
-	_, err := initialQuery(c.Context(), db)
+	_, err = initialQuery(c.Context(), db)
 	c.Assert(err, tc.NotNil)
 }
 
@@ -734,7 +734,7 @@ func (s *volumeSuite) TestGetVolumeUUIDForID(c *tc.C) {
 // changeVolumeLife is a utility function for updating the life value of a
 // volume.
 func (s *volumeSuite) changeVolumeLife(
-	c *tc.C, uuid storageprovisioning.VolumeUUID, life domainlife.Life,
+	c *tc.C, uuid domainstorageprovisioning.VolumeUUID, life domainlife.Life,
 ) {
 	_, err := s.DB().Exec(`
 UPDATE storage_volume
@@ -748,7 +748,7 @@ WHERE  uuid = ?
 // changeVolumeAttachmentLife is a utility function for updating the life
 // value of a volume attachment.
 func (s *volumeSuite) changeVolumeAttachmentLife(
-	c *tc.C, uuid storageprovisioning.VolumeAttachmentUUID, life domainlife.Life,
+	c *tc.C, uuid domainstorageprovisioning.VolumeAttachmentUUID, life domainlife.Life,
 ) {
 	_, err := s.DB().Exec(`
 UPDATE storage_volume_attachment

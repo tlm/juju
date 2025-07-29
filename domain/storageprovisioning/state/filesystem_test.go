@@ -12,7 +12,7 @@ import (
 	domainlife "github.com/juju/juju/domain/life"
 	domainnetwork "github.com/juju/juju/domain/network"
 	networkerrors "github.com/juju/juju/domain/network/errors"
-	"github.com/juju/juju/domain/storageprovisioning"
+	domainstorageprovisioning "github.com/juju/juju/domain/storageprovisioning"
 	storageprovisioningerrors "github.com/juju/juju/domain/storageprovisioning/errors"
 	domaintesting "github.com/juju/juju/domain/storageprovisioning/testing"
 )
@@ -62,8 +62,8 @@ func (s *filesystemSuite) TestGetFilesystemWithBackingVolume(c *tc.C) {
 	result, err := st.GetFilesystem(c.Context(), fsUUID)
 
 	c.Assert(err, tc.ErrorIsNil)
-	c.Assert(result, tc.DeepEquals, storageprovisioning.Filesystem{
-		BackingVolume: &storageprovisioning.FilesystemBackingVolume{
+	c.Assert(result, tc.DeepEquals, domainstorageprovisioning.Filesystem{
+		BackingVolume: &domainstorageprovisioning.FilesystemBackingVolume{
 			VolumeID: volID,
 		},
 		FilesystemID: fsID,
@@ -82,7 +82,7 @@ func (s *filesystemSuite) TestGetFilesystemWithoutBackingVolume(c *tc.C) {
 	result, err := st.GetFilesystem(c.Context(), fsUUID)
 
 	c.Assert(err, tc.ErrorIsNil)
-	c.Assert(result, tc.DeepEquals, storageprovisioning.Filesystem{
+	c.Assert(result, tc.DeepEquals, domainstorageprovisioning.Filesystem{
 		FilesystemID: fsID,
 		Size:         100,
 	})
@@ -127,7 +127,7 @@ func (s *filesystemSuite) TestGetFilesystemAttachment(c *tc.C) {
 	result, err := st.GetFilesystemAttachment(c.Context(), uuid)
 
 	c.Assert(err, tc.ErrorIsNil)
-	c.Assert(result, tc.DeepEquals, storageprovisioning.FilesystemAttachment{
+	c.Assert(result, tc.DeepEquals, domainstorageprovisioning.FilesystemAttachment{
 		FilesystemID: fsID,
 		MountPoint:   "/mnt/",
 		ReadOnly:     true,
@@ -159,7 +159,7 @@ func (s *filesystemSuite) TestGetFilesystemAttachmentIDsOnlyUnits(c *tc.C) {
 	st := NewState(s.TxnRunnerFactory())
 	result, err := st.GetFilesystemAttachmentIDs(c.Context(), []string{fsaUUID.String()})
 	c.Check(err, tc.ErrorIsNil)
-	c.Check(result, tc.DeepEquals, map[string]storageprovisioning.FilesystemAttachmentID{
+	c.Check(result, tc.DeepEquals, map[string]domainstorageprovisioning.FilesystemAttachmentID{
 		fsaUUID.String(): {
 			FilesystemID: fsID,
 			MachineName:  nil,
@@ -181,7 +181,7 @@ func (s *filesystemSuite) TestGetFilesystemAttachmentIDsOnlyMachines(c *tc.C) {
 	st := NewState(s.TxnRunnerFactory())
 	result, err := st.GetFilesystemAttachmentIDs(c.Context(), []string{fsaUUID.String()})
 	c.Check(err, tc.ErrorIsNil)
-	c.Check(result, tc.DeepEquals, map[string]storageprovisioning.FilesystemAttachmentID{
+	c.Check(result, tc.DeepEquals, map[string]domainstorageprovisioning.FilesystemAttachmentID{
 		fsaUUID.String(): {
 			FilesystemID: fsID,
 			MachineName:  &machineName,
@@ -206,7 +206,7 @@ func (s *filesystemSuite) TestGetFilesystemAttachmentIDsMachineNotUnit(c *tc.C) 
 	st := NewState(s.TxnRunnerFactory())
 	result, err := st.GetFilesystemAttachmentIDs(c.Context(), []string{fsaUUID.String()})
 	c.Check(err, tc.ErrorIsNil)
-	c.Check(result, tc.DeepEquals, map[string]storageprovisioning.FilesystemAttachmentID{
+	c.Check(result, tc.DeepEquals, map[string]domainstorageprovisioning.FilesystemAttachmentID{
 		fsaUUID.String(): {
 			FilesystemID: fsID,
 			MachineName:  &machineName,
@@ -236,7 +236,7 @@ func (s *filesystemSuite) TestGetFilesystemAttachmentIDsMixed(c *tc.C) {
 		fsa1UUID.String(), fsa2UUID.String(),
 	})
 	c.Check(err, tc.ErrorIsNil)
-	c.Check(result, tc.DeepEquals, map[string]storageprovisioning.FilesystemAttachmentID{
+	c.Check(result, tc.DeepEquals, map[string]domainstorageprovisioning.FilesystemAttachmentID{
 		fsa1UUID.String(): {
 			FilesystemID: fsID1,
 			MachineName:  &machineName,
@@ -291,7 +291,7 @@ func (s *filesystemSuite) TestGetFilesystemAttachmentLifeForNetNode(c *tc.C) {
 
 	st := NewState(s.TxnRunnerFactory())
 	lives, err := st.GetFilesystemAttachmentLifeForNetNode(
-		c.Context(), domainnetwork.NetNodeUUID(netNodeUUID),
+		c.Context(), netNodeUUID,
 	)
 	c.Check(err, tc.ErrorIsNil)
 	c.Check(lives, tc.DeepEquals, map[string]domainlife.Life{
@@ -304,7 +304,7 @@ func (s *filesystemSuite) TestGetFilesystemAttachmentLifeForNetNode(c *tc.C) {
 	// out.
 	s.changeFilesystemAttachmentLife(c, fsaUUID1, domainlife.Dying)
 	lives, err = st.GetFilesystemAttachmentLifeForNetNode(
-		c.Context(), domainnetwork.NetNodeUUID(netNodeUUID),
+		c.Context(), netNodeUUID,
 	)
 	c.Check(err, tc.ErrorIsNil)
 	c.Check(lives, tc.DeepEquals, map[string]domainlife.Life{
@@ -320,7 +320,7 @@ func (s *filesystemSuite) TestGetFilesystemAttachmentLifeNoResults(c *tc.C) {
 	netNodeUUID := s.newNetNode(c)
 	st := NewState(s.TxnRunnerFactory())
 	lives, err := st.GetFilesystemAttachmentLifeForNetNode(
-		c.Context(), domainnetwork.NetNodeUUID(netNodeUUID),
+		c.Context(), netNodeUUID,
 	)
 	c.Check(err, tc.ErrorIsNil)
 	c.Check(lives, tc.HasLen, 0)
@@ -348,7 +348,7 @@ func (s *filesystemSuite) TestGetFilesystemLifeForNetNode(c *tc.C) {
 	_ = s.newMachineFilesystemAttachment(c, fsIDOtherMachine, s.newNetNode(c))
 
 	fsUUIDs, err := st.GetFilesystemLifeForNetNode(
-		c.Context(), domainnetwork.NetNodeUUID(netNodeUUID))
+		c.Context(), netNodeUUID)
 	c.Assert(err, tc.ErrorIsNil)
 	c.Check(fsUUIDs, tc.DeepEquals, map[string]domainlife.Life{
 		fsOneID:   domainlife.Alive,
@@ -375,7 +375,7 @@ func (s *filesystemSuite) TestInitialWatchStatementMachineProvisionedFilesystems
 	_ = s.newMachineFilesystemAttachment(c, fsIDOtherMachine, s.newNetNode(c))
 
 	ns, initialQuery := st.InitialWatchStatementMachineProvisionedFilesystems(
-		domainnetwork.NetNodeUUID(netNodeUUID),
+		netNodeUUID,
 	)
 	c.Check(ns, tc.Equals, "storage_filesystem_life_machine_provisioning")
 
@@ -403,7 +403,7 @@ func (s *filesystemSuite) TestInitialWatchStatementMachineProvisionedFilesystems
 	s.newMachineFilesystemAttachment(c, fsIDOtherMachine, s.newNetNode(c))
 
 	ns, initialQuery := st.InitialWatchStatementMachineProvisionedFilesystems(
-		domainnetwork.NetNodeUUID(netNodeUUID),
+		netNodeUUID,
 	)
 	c.Check(ns, tc.Equals, "storage_filesystem_life_machine_provisioning")
 
@@ -423,7 +423,7 @@ func (s *filesystemSuite) TestInitialWatchStatementMachineProvisionedFilesystems
 	c.Assert(err, tc.ErrorIsNil)
 
 	ns, initialQuery := st.InitialWatchStatementMachineProvisionedFilesystems(
-		domainnetwork.NetNodeUUID(netNodeUUID),
+		netNodeUUID,
 	)
 	c.Check(ns, tc.Equals, "storage_filesystem_life_machine_provisioning")
 
@@ -483,7 +483,7 @@ func (s *filesystemSuite) TestInitialWatchStatementMachineProvisionedFilesystemA
 
 	st := NewState(s.TxnRunnerFactory())
 	ns, initialQuery := st.InitialWatchStatementMachineProvisionedFilesystemAttachments(
-		domainnetwork.NetNodeUUID(netNodeUUID),
+		netNodeUUID,
 	)
 	c.Check(ns, tc.Equals, "storage_filesystem_attachment_life_machine_provisioning")
 
@@ -510,7 +510,7 @@ func (s *filesystemSuite) TestInitialWatchStatementMachineProvisionedFilesystemA
 
 	st := NewState(s.TxnRunnerFactory())
 	ns, initialQuery := st.InitialWatchStatementMachineProvisionedFilesystemAttachments(
-		domainnetwork.NetNodeUUID(netNodeUUID),
+		netNodeUUID,
 	)
 	c.Check(ns, tc.Equals, "storage_filesystem_attachment_life_machine_provisioning")
 
@@ -726,7 +726,7 @@ func (s *filesystemSuite) TestGetFilesystemUUIDForID(c *tc.C) {
 // changeFilesystemLife is a utility function for updating the life value of a
 // filesystem.
 func (s *filesystemSuite) changeFilesystemLife(
-	c *tc.C, uuid storageprovisioning.FilesystemUUID, life domainlife.Life,
+	c *tc.C, uuid domainstorageprovisioning.FilesystemUUID, life domainlife.Life,
 ) {
 	_, err := s.DB().Exec(`
 UPDATE storage_filesystem
@@ -742,7 +742,7 @@ WHERE  uuid = ?
 // for a filesystem attachment.
 func (s *filesystemSuite) changeFilesystemAttachmentLife(
 	c *tc.C,
-	uuid storageprovisioning.FilesystemAttachmentUUID,
+	uuid domainstorageprovisioning.FilesystemAttachmentUUID,
 	life domainlife.Life,
 ) {
 	_, err := s.DB().Exec(`
@@ -757,7 +757,7 @@ WHERE  uuid = ?
 // newMachineFilesystem creates a new filesystem in the model with machine
 // provision scope. Returned is the uuid and filesystem id of the entity.
 func (s *filesystemSuite) newMachineFilesystem(c *tc.C) (
-	storageprovisioning.FilesystemUUID, string,
+	domainstorageprovisioning.FilesystemUUID, string,
 ) {
 	return s.newMachineFilesystemWithSize(c, 100)
 }
@@ -767,7 +767,7 @@ func (s *filesystemSuite) newMachineFilesystem(c *tc.C) (
 // id of the entity.
 func (s *filesystemSuite) newMachineFilesystemWithSize(
 	c *tc.C, size uint64,
-) (storageprovisioning.FilesystemUUID, string) {
+) (domainstorageprovisioning.FilesystemUUID, string) {
 	fsUUID := domaintesting.GenFilesystemUUID(c)
 	fsID := fmt.Sprintf("foo/%s", fsUUID.String())
 	_, err := s.DB().Exec(`
@@ -783,7 +783,7 @@ VALUES (?, ?, 0, ?, 1)
 // newModelFilesystem creates a new filesystem in the model with model
 // provision scope. Return is the uuid and filesystem id of the entity.
 func (s *filesystemSuite) newModelFilesystem(c *tc.C) (
-	storageprovisioning.FilesystemUUID, string,
+	domainstorageprovisioning.FilesystemUUID, string,
 ) {
 	fsUUID := domaintesting.GenFilesystemUUID(c)
 
@@ -804,9 +804,9 @@ VALUES (?, ?, 0, 0)
 // filesystem uuid and net node uuid.
 func (s *filesystemSuite) newMachineFilesystemAttachment(
 	c *tc.C,
-	fsUUID storageprovisioning.FilesystemUUID,
+	fsUUID domainstorageprovisioning.FilesystemUUID,
 	netNodeUUID domainnetwork.NetNodeUUID,
-) storageprovisioning.FilesystemAttachmentUUID {
+) domainstorageprovisioning.FilesystemAttachmentUUID {
 	attachmentUUID := domaintesting.GenFilesystemAttachmentUUID(c)
 
 	_, err := s.DB().ExecContext(
@@ -832,9 +832,9 @@ VALUES (?, ?, ?, 0, '/mnt/', true, 1)
 // filesystem uuid and net node uuid.
 func (s *filesystemSuite) newModelFilesystemAttachment(
 	c *tc.C,
-	fsUUID storageprovisioning.FilesystemUUID,
+	fsUUID domainstorageprovisioning.FilesystemUUID,
 	netNodeUUID domainnetwork.NetNodeUUID,
-) storageprovisioning.FilesystemAttachmentUUID {
+) domainstorageprovisioning.FilesystemAttachmentUUID {
 	attachmentUUID := domaintesting.GenFilesystemAttachmentUUID(c)
 
 	_, err := s.DB().ExecContext(

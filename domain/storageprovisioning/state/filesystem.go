@@ -15,11 +15,9 @@ import (
 	coreunit "github.com/juju/juju/core/unit"
 	"github.com/juju/juju/core/watcher/eventsource"
 	"github.com/juju/juju/domain"
-	"github.com/juju/juju/domain/life"
 	domainlife "github.com/juju/juju/domain/life"
 	domainnetwork "github.com/juju/juju/domain/network"
 	networkerrors "github.com/juju/juju/domain/network/errors"
-	"github.com/juju/juju/domain/storageprovisioning"
 	domainstorageprovisioning "github.com/juju/juju/domain/storageprovisioning"
 	storageprovisioningerrors "github.com/juju/juju/domain/storageprovisioning/errors"
 	"github.com/juju/juju/internal/errors"
@@ -107,7 +105,7 @@ WHERE  filesystem_id=$filesystemID.filesystem_id
 func (st *State) GetFilesystem(
 	ctx context.Context,
 	uuid domainstorageprovisioning.FilesystemUUID,
-) (storageprovisioning.Filesystem, error) {
+) (domainstorageprovisioning.Filesystem, error) {
 	db, err := st.DB()
 	if err != nil {
 		return domainstorageprovisioning.Filesystem{}, errors.Capture(err)
@@ -360,7 +358,7 @@ WHERE  uuid = $filesystemAttachmentUUID.uuid
 func (st *State) GetFilesystemAttachmentLifeForNetNode(
 	ctx context.Context,
 	netNodeUUID domainnetwork.NetNodeUUID,
-) (map[string]life.Life, error) {
+) (map[string]domainlife.Life, error) {
 	db, err := st.DB()
 	if err != nil {
 		return nil, errors.Capture(err)
@@ -376,7 +374,7 @@ func (st *State) getFilesystemAttachmentLifeForNetNode(
 	ctx context.Context,
 	db domain.TxnRunner,
 	uuid domainnetwork.NetNodeUUID,
-) (map[string]life.Life, error) {
+) (map[string]domainlife.Life, error) {
 	netNodeInput := netNodeUUID{UUID: uuid.String()}
 	stmt, err := st.Prepare(`
 SELECT DISTINCT &attachmentLife.*
@@ -540,7 +538,7 @@ WHERE  uuid = $filesystemUUID.uuid
 func (st *State) GetFilesystemLifeForNetNode(
 	ctx context.Context,
 	netNodeUUID domainnetwork.NetNodeUUID,
-) (map[string]life.Life, error) {
+) (map[string]domainlife.Life, error) {
 	db, err := st.DB()
 	if err != nil {
 		return nil, errors.Capture(err)
@@ -555,7 +553,7 @@ func (st *State) getFilesystemLifeForNetNode(
 	ctx context.Context,
 	db domain.TxnRunner,
 	uuid domainnetwork.NetNodeUUID,
-) (map[string]life.Life, error) {
+) (map[string]domainlife.Life, error) {
 	netNodeInput := netNodeUUID{UUID: uuid.String()}
 	stmt, err := st.Prepare(`
 SELECT DISTINCT (sf.filesystem_id, sf.life_id) AS (&filesystemLife.*)
@@ -642,9 +640,9 @@ WHERE  filesystem_id = $filesystemID.filesystem_id
 // supplied net node will be emitted.
 func (st *State) InitialWatchStatementMachineProvisionedFilesystems(
 	netNodeUUID domainnetwork.NetNodeUUID,
-) (string, eventsource.Query[map[string]life.Life]) {
+) (string, eventsource.Query[map[string]domainlife.Life]) {
 	query := func(ctx context.Context, db database.TxnRunner) (
-		map[string]life.Life, error,
+		map[string]domainlife.Life, error,
 	) {
 		return st.getFilesystemLifeForNetNode(ctx, db, netNodeUUID)
 	}
@@ -695,8 +693,8 @@ WHERE provision_scope_id=0
 // connected to the supplied net node will be emitted.
 func (st *State) InitialWatchStatementMachineProvisionedFilesystemAttachments(
 	netNodeUUID domainnetwork.NetNodeUUID,
-) (string, eventsource.Query[map[string]life.Life]) {
-	query := func(ctx context.Context, db database.TxnRunner) (map[string]life.Life, error) {
+) (string, eventsource.Query[map[string]domainlife.Life]) {
+	query := func(ctx context.Context, db database.TxnRunner) (map[string]domainlife.Life, error) {
 		return st.getFilesystemAttachmentLifeForNetNode(ctx, db, netNodeUUID)
 	}
 	return "storage_filesystem_attachment_life_machine_provisioning", query
