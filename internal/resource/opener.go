@@ -66,7 +66,7 @@ func NewResourceOpenerForUnit(
 			return args.ResourceService.SetUnitResource(ctx, resourceUUID, unitUUID)
 		},
 		charmOrigin:                 charmOrigin,
-		appID:                       applicationID,
+		appUUID:                     applicationID,
 		resourceDownloadLimiterFunc: resourceDownloadLimiterFunc,
 	}, nil
 }
@@ -91,7 +91,7 @@ func NewResourceOpenerForApplication(
 			return nil
 		},
 		charmOrigin: charmOrigin,
-		appID:       applicationID,
+		appUUID:     applicationID,
 		resourceDownloadLimiterFunc: func() ResourceDownloadLock {
 			return noopDownloadResourceLocker{}
 		},
@@ -121,7 +121,7 @@ type ResourceOpener struct {
 	retrievedByType coreresource.RetrievedByType
 	setResourceFunc func(ctx context.Context, resourceUUID coreresource.UUID) error
 	charmOrigin     charm.Origin
-	appID           coreapplication.UUID
+	appUUID         coreapplication.UUID
 
 	resourceClientGetter        ResourceClientGetter
 	resourceDownloadLimiterFunc func() ResourceDownloadLock
@@ -131,9 +131,9 @@ type ResourceOpener struct {
 func (ro ResourceOpener) OpenResource(ctx context.Context, name string) (opener coreresource.Opened, err error) {
 	lock := ro.resourceDownloadLimiterFunc()
 
-	lockName := ro.appID.String()
+	lockName := ro.appUUID.String()
 	if err := lock.Acquire(ctx, lockName); err != nil {
-		return coreresource.Opened{}, errors.Errorf("acquiring resource download lock for %s: %w", ro.appID, err)
+		return coreresource.Opened{}, errors.Errorf("acquiring resource download lock for %s: %w", ro.appUUID, err)
 	}
 
 	return ro.getResource(ctx, name, func() {
@@ -161,17 +161,17 @@ func (ro ResourceOpener) getResource(
 		}
 	}()
 
-	lockName := fmt.Sprintf("%s/%s", ro.appID, resName)
+	lockName := fmt.Sprintf("%s/%s", ro.appUUID, resName)
 	locker := resourceMutex.Locker(lockName)
 	locker.Lock()
 	defer locker.Unlock()
 
 	resourceUUID, err := ro.resourceService.GetApplicationResourceID(ctx, resource.GetApplicationResourceIDArgs{
-		ApplicationUUID: ro.appID,
+		ApplicationUUID: ro.appUUID,
 		Name:            resName,
 	})
 	if err != nil {
-		return coreresource.Opened{}, errors.Errorf("getting UUID of resource %s for application %s: %w", resName, ro.appID, err)
+		return coreresource.Opened{}, errors.Errorf("getting UUID of resource %s for application %s: %w", resName, ro.appUUID, err)
 	}
 
 	res, reader, err := ro.resourceService.OpenResource(ctx, resourceUUID)
@@ -281,7 +281,7 @@ func (ro ResourceOpener) store(
 func (ro ResourceOpener) SetResourceUsed(ctx context.Context, resourceUUID coreresource.UUID) error {
 	err := ro.setResourceFunc(ctx, resourceUUID)
 	if err != nil {
-		return errors.Errorf("setting resource %s on application %s: %w", resourceUUID, ro.appID, err)
+		return errors.Errorf("setting resource %s on application %s: %w", resourceUUID, ro.appUUID, err)
 	}
 	return nil
 }

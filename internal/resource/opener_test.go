@@ -35,7 +35,7 @@ import (
 
 type OpenerSuite struct {
 	appName              string
-	appID                coreapplication.UUID
+	appUUID              coreapplication.UUID
 	unitName             coreunit.Name
 	unitUUID             coreunit.UUID
 	resourceUUID         coreresource.UUID
@@ -226,7 +226,7 @@ func (s *OpenerSuite) setupMocks(c *tc.C, includeUnit bool) *gomock.Controller {
 		s.unitUUID = ""
 	}
 	s.appName = "postgresql"
-	s.appID = tc.Must(c, coreapplication.NewUUID)
+	s.appUUID = tc.Must(c, coreapplication.NewUUID)
 	s.resourceUUID = coreresourcetesting.GenResourceUUID(c)
 	s.resourceClient = NewMockResourceClient(ctrl)
 	s.resourceClientGetter = NewMockResourceClientGetter(ctrl)
@@ -263,7 +263,7 @@ func (s *OpenerSuite) expectServiceMethods(
 ) {
 	s.resourceService.EXPECT().GetApplicationResourceID(
 		gomock.Any(), domainresource.GetApplicationResourceIDArgs{
-			ApplicationUUID: s.appID,
+			ApplicationUUID: s.appUUID,
 			Name:            "wal-e",
 		},
 	).Return(s.resourceUUID, nil).AnyTimes()
@@ -349,7 +349,7 @@ func (s *OpenerSuite) TestGetResourceErrorReleasesLock(c *tc.C) {
 	}
 	s.resourceService.EXPECT().GetApplicationResourceID(
 		gomock.Any(), domainresource.GetApplicationResourceIDArgs{
-			ApplicationUUID: s.appID,
+			ApplicationUUID: s.appUUID,
 			Name:            "wal-e",
 		},
 	).Return(s.resourceUUID, nil)
@@ -382,8 +382,8 @@ func (s *OpenerSuite) TestGetResourceErrorReleasesLock(c *tc.C) {
 		charmhub.ResourceData{},
 		errors.New("boom"),
 	).Times(retryCount)
-	s.limiter.EXPECT().Acquire(gomock.Any(), s.appID.String()).Return(nil)
-	s.limiter.EXPECT().Release(s.appID.String())
+	s.limiter.EXPECT().Acquire(gomock.Any(), s.appUUID.String()).Return(nil)
+	s.limiter.EXPECT().Release(s.appUUID.String())
 
 	s.expectNewUnitResourceOpener(c)
 	opened, err := s.newUnitResourceOpener(
@@ -432,7 +432,7 @@ func (s *OpenerSuite) expectNewUnitResourceOpener(c *tc.C) {
 	s.applicationService.EXPECT().GetApplicationUUIDByUnitName(
 		gomock.Any(),
 		s.unitName,
-	).Return(s.appID, nil)
+	).Return(s.appUUID, nil)
 	s.applicationService.EXPECT().GetUnitUUID(
 		gomock.Any(),
 		s.unitName,
@@ -485,7 +485,7 @@ func (s *OpenerSuite) newApplicationResourceOpener(c *tc.C) coreresource.Opener 
 			CharmhubClientGetter: s.resourceClientGetter,
 		},
 		s.appName,
-		s.appID,
+		s.appUUID,
 	)
 	c.Assert(err, tc.ErrorIsNil)
 	return opener
