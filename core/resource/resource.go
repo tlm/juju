@@ -32,6 +32,7 @@ import (
 type Resource struct {
 	resource.Resource
 
+	// UUID is the unique identifier for this resource within the charm.
 	UUID UUID
 
 	// ApplicationName identifies the application name for the resource
