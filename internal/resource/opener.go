@@ -41,7 +41,7 @@ func NewResourceOpenerForUnit(
 	resourceDownloadLimiterFunc func() ResourceDownloadLock,
 	unitName coreunit.Name,
 ) (opener coreresource.Opener, err error) {
-	applicationID, err := args.ApplicationService.GetApplicationUUIDByUnitName(ctx, unitName)
+	appUUID, err := args.ApplicationService.GetApplicationUUIDByUnitName(ctx, unitName)
 	if err != nil {
 		return nil, errors.Errorf("loading application UUID for unit %s: %w", unitName, err)
 	}
@@ -66,7 +66,7 @@ func NewResourceOpenerForUnit(
 			return args.ResourceService.SetUnitResource(ctx, resourceUUID, unitUUID)
 		},
 		charmOrigin:                 charmOrigin,
-		appUUID:                     applicationID,
+		appUUID:                     appUUID,
 		resourceDownloadLimiterFunc: resourceDownloadLimiterFunc,
 	}, nil
 }
@@ -76,7 +76,7 @@ func NewResourceOpenerForApplication(
 	ctx context.Context,
 	args ResourceOpenerArgs,
 	applicationName string,
-	applicationID coreapplication.UUID,
+	appUUID coreapplication.UUID,
 ) (opener coreresource.Opener, err error) {
 	charmOrigin, err := args.ApplicationService.GetApplicationCharmOrigin(ctx, applicationName)
 	if err != nil {
@@ -91,7 +91,7 @@ func NewResourceOpenerForApplication(
 			return nil
 		},
 		charmOrigin: charmOrigin,
-		appUUID:     applicationID,
+		appUUID:     appUUID,
 		resourceDownloadLimiterFunc: func() ResourceDownloadLock {
 			return noopDownloadResourceLocker{}
 		},
